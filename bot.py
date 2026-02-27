@@ -1,12 +1,9 @@
-# /telegram-stock-bot/bot.py
-
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 from config import TELEGRAM_BOT_TOKEN, ADMIN_USER_IDS
 import db
 
-# --- Basic Setup ---
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -14,7 +11,6 @@ logging.basicConfig(
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# --- Helper Functions ---
 def format_product(product):
     """Formats a product dictionary into a readable string."""
     return (
@@ -24,7 +20,6 @@ def format_product(product):
         f"📊 *Stock:* {product['stock']} units"
     )
 
-# --- Command Handlers ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a welcome message when the /start command is issued."""
     user = update.effective_user
@@ -103,7 +98,6 @@ async def buy_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         logger.info(f"Purchase: User {update.effective_user.id} bought {quantity} of {code}. New stock: {product['stock']}")
     else:
-        # 'result' contains the error message from db.py
         response = f"⚠️ *Purchase Failed:*\n{result}"
         
     await update.message.reply_markdown(response)
@@ -145,7 +139,6 @@ async def add_stock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     await update.message.reply_markdown(response)
 
-# --- Free Text Search ---
 async def free_text_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles non-command messages to perform a search."""
     keyword = update.message.text
@@ -165,7 +158,6 @@ async def perform_search(update: Update, keyword: str):
         
     await update.message.reply_markdown(response.strip())
 
-# --- Pagination for /list ---
 ITEMS_PER_PAGE = 5
 
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -198,7 +190,6 @@ async def send_paginated_list(message, context, page=0, is_edit=False):
     for p in paginated_products:
         text += format_product(p) + "\n\n"
     
-    # --- Keyboard Buttons ---
     keyboard = []
     row = []
     if page > 0:
@@ -215,12 +206,10 @@ async def send_paginated_list(message, context, page=0, is_edit=False):
     else:
         await message.reply_markdown(text, reply_markup=reply_markup)
 
-# --- Main Application ---
 def main() -> None:
     """Start the bot."""
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Command handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("find", find_command))
@@ -229,17 +218,14 @@ def main() -> None:
     application.add_handler(CommandHandler("addstock", add_stock_command))
     application.add_handler(CommandHandler("list", list_command))
 
-    # Callback query handler for pagination
     application.add_handler(CallbackQueryHandler(list_callback, pattern='^list_'))
 
-    # Message handler for free text search (must be last)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, free_text_search))
 
-    # Log a message to the console to confirm the bot is running
     logger.info("Bot started successfully. Polling for updates...")
 
-    # Run the bot
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main()
+
